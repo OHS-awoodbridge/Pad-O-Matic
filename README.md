@@ -11,10 +11,7 @@ THe method used to create random number is to collect the monotonic time of thre
 
 
 
-
-
-
-
+## References
   To see the original IEEE Spectrum Hands On article, visit:
   https://spectrum.ieee.org/diy-one-time-pad-machine
 
