@@ -1,25 +1,31 @@
 """
 Pad-O-Matic Geiger Counter Edition
 
-Micro: Teensy 4.0
+Micro: 
+  Teensy 4.0
 Pinout:
   -I2C SSD1306 128x64 Display
       GND -> GND
       VCC -> 5v
-      SCL -> D19
-      SDA -> D18
+      SCL -> D19 (SCL0)
+      SDA -> D18 (SDA0)
   -Push Button with LED Indicator
       Switch -> D17 & GND
       LED -> D16 & GND
-
-
-
-
+  -MightyOhm Geiger Counter
+      J6/1 -> 3v
+      J6/2 -> D14
+      J6/3 -> GND
+  -Miniature Thermal Printer
+      5v & Ground to external supply(USB 5v does not provide enough current)
+      TX -> D0 (RX1)
+      RX -> D1 (TX1)
 
 """
-
-
-
+#program options
+use_true_random = True
+print_checkerboard = False
+pad_size = 250
 
 
 
@@ -32,13 +38,12 @@ import digitalio
 import terminalio
 from adafruit_display_text import label
 from i2cdisplaybus import I2CDisplayBus
-import rotaryio
+#import rotaryio
 import adafruit_displayio_ssd1306
 import adafruit_thermal_printer
 #from circular_buffer import *
 
 #variables to handle the random number generations
-use_true_random = True
 working_rand_int = 0
 click_count = 0
 click_values = [0,0,0]
@@ -46,19 +51,8 @@ bit_counter = 0
 
 #variables to handle the pad generation
 pad_rand_array = []
-pad_size = 250
-print_checkerboard = False
-print_checkerboard = False
 
-
-#setup encoder
-encoder = rotaryio.IncrementalEncoder(board.D21, board.D20)
-button = digitalio.DigitalInOut(board.D22)
-button.direction = digitalio.Direction.INPUT
-button.pull = digitalio.Pull.UP
-button_state = None
-last_position = encoder.position
-
+#variable to hand the led/button
 print_button = digitalio.DigitalInOut(board.D17)
 print_button.direction = digitalio.Direction.INPUT
 print_button.pull = digitalio.Pull.UP
@@ -71,9 +65,8 @@ geiger = digitalio.DigitalInOut(board.D14)
 geiger.direction = digitalio.Direction.INPUT
 
 #setup printer
-uart = busio.UART(board.TX1, board.RX1, baudrate=19200)
+uart = busio.UART(board.TX1, board.RX1, baudrate=9600)
 ThermalPrinter = adafruit_thermal_printer.get_printer_class(2.69)
-
 printer = ThermalPrinter(uart)
 #printer.print('Hello from CircuitPython!')
 #printer.feed(3)
@@ -92,18 +85,11 @@ display = adafruit_displayio_ssd1306.SSD1306(display_bus, width=WIDTH, height=HE
 splash = displayio.Group()
 display.root_group = splash
 
-# Draw a label
+# Initialize the screen
 text_upper = label.Label(terminalio.FONT, text="Pad-O-Matic", color=0xFFFFFF, x=0, y=4)
 splash.append(text_upper)
-
-
-text_lower= label.Label(terminalio.FONT, text="Qty = " + str(pad_size), color=0xFFFFFF, x=0, y=20)
+text_lower= label.Label(terminalio.FONT, text="", color=0xFFFFFF, x=0, y=25)
 splash.append(text_lower)
-
-
-
-
-
 
 
 def add_bit(true_rand:bool):
@@ -142,7 +128,7 @@ def add_bit(true_rand:bool):
         working_rand_int = 0
 
 def print_pad(length:int) -> str:
-    """prints the output to the thermal printer"""
+    """returns formatted random pad as a string"""
     pad_body = ""
     for i in range(length):
         if i % 25 == 0:
@@ -151,13 +137,12 @@ def print_pad(length:int) -> str:
             pad_body += " "
         pad_body += str(pad_rand_array.pop(0))
 
-
     pad_output = "Length =" + str(length)+ "\n----IN PAD BEGIN----"
     pad_output += pad_body
     pad_output += "\n-----IN PAD END----- "
     if print_checkerboard:
         pad_output +="\n\n--Conversion Table--\nCode-0  B-70  P-80  FIG-90\n   A-1  C-71  Q-81  (.)-91\n   E-2  D-72  R-82  (:)-92\n   I-3  F-73  S-83  (')-93\n   N-4  G-74  U-84  ( )-94\n   O-5  H-75  V-85  (+)-95\n   T-6  J-76  W-86  (-)-96\n        K-77  X-87  (=)-97\n        L-78  Y-88  (?)-98\n        M-79  Z-89  SPC-99 "
-    pad_output += "\n\n=========================\n\n----OUT PAD BEGIN----"
+    pad_output += "\n\n==========Fold and Tear==========\n\n----OUT PAD BEGIN----"
     pad_output += pad_body
     pad_output += "\n-----OUT PAD END----- "
     if print_checkerboard:
@@ -166,74 +151,18 @@ def print_pad(length:int) -> str:
     return pad_output
 
 
-menu_mode = "Choose"
-menu_modes = ["Pad Size", "Tr-Ps","Choose","Print"]
-menu_item = "Pad Size"
-
-def menu(code:str):
-    """translates encoder operations to select and update options"""
-    global menu_mode
-    global menu_item
-    global pad_size
-    global use_true_random
-
-    if menu_mode == "Choose":
-        if code == "e+":
-            if menu_item == "Pad Size":
-                menu_item = "Tr-Ps"
-            else:
-                menu_item == "Pad Size"
-        elif code == "e-":
-            if menu_item == "Tr-Ps":
-                menu_item = "Pad Size"
-            else:
-                menu_item == "Tr-Ps"
-        elif code == "button":
-            print(menu_item)
-            menu_mode = menu_item
-    elif menu_mode == "Pad Size":
-        if code == "e+":
-            pad_size += 5
-        elif code == "e-":
-            pad_size -= 5
-            if pad_size < 10:
-                pad_size = 10
-        elif code == "button":
-            menu_mode = "Choose"
-    elif menu_mode == "Tr-Ps":
-        if code == "e+":
-            use_true_random = not use_true_random
-        elif code == "e-":
-            use_true_random = not use_true_random
-        elif code == "button":
-            menu_mode = "Choose"
-    #update the screen
-    draw_screen()
-
-
 def draw_screen():
-    global menu_mode
-    global menu_item
+    """updates the OLED"""
+    global pad_rand_array
     global pad_size
     global use_true_random
-
-    menu_screen = "Buffer = " + str(len(pad_rand_array)) + "\n"
-    if menu_mode == "Choose":
-        if menu_item == "Pad Size":
-            menu_screen += "- Pad Size = " + str(pad_size)
-        else:
-            menu_screen += "  Pad Size = " + str(pad_size)
-        if menu_item == "Tr-Ps":
-            menu_screen += "\n- Random = " + str(use_true_random)
-        else:
-            menu_screen += "\n  Random = " + str(use_true_random)
-    elif menu_mode == "Pad Size":
-        menu_screen += "> Pad Size = " + str(pad_size)
-        menu_screen += "\n  Random = " + str(use_true_random)
-    elif menu_mode == "Tr-Ps":
-        menu_screen += "  Pad Size = " + str(pad_size)
-        menu_screen += "\n> Random = " + str(use_true_random)
-
+    
+    menu_screen = "Buffer = " + str(len(pad_rand_array))
+    if len(pad_rand_array) > pad_size:
+        menu_screen += "\n\nReady to Print"
+    else:
+         menu_screen += "\n\nBuffer filling"
+    
     text_lower.text = menu_screen
 
 
@@ -243,47 +172,31 @@ prev_time = time.monotonic()
 draw_screen()
 
 while True:
+    #refresh the screen every five seconds
     now = time.monotonic()
     if now > prev_time + 5:
         prev_time = now
         draw_screen()
-    #handler for encoder
-    position = encoder.position
-    if position != last_position:
-        if position < last_position:
-           menu("e-")
-        elif position > last_position:
-           menu("e+")
-        last_position = position
 
-    #handle the button
-    if not button.value and button_state is None:
-        button_state = "pressed"
-    if button.value and button_state == "pressed":
-        menu("button")
-        button_state = None
-        time.sleep(.2)
-
-
+    #illumunates the button, once the buffer is bigger than the pad size.
     if len(pad_rand_array) > pad_size:
         print_light.value = True
     else:
-        print_light.value = True
+        print_light.value = False
 
-
+    #debounce the button, and print the pad to the serial monitor and thermal printer
     if not print_button.value and print_button_state is None:
         print_button_state = "pressed"
     if print_button.value and print_button_state == "pressed":
         if len(pad_rand_array) > pad_size:
             out = print_pad(250)
-            #printer.print(out)
             print(out)
-
-
+            printer.print(out)
+            printer.feed(3)
         else:
             print("Insufficient Buffer Size")
         print_button_state = None
-        time.sleep(.2)
+        time.sleep(.4)
 
     #add random values to the buffer
     if use_true_random:
