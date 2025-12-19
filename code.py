@@ -1,7 +1,7 @@
 """
 Pad-O-Matic Geiger Counter Edition
 
-Micro: 
+Micro:
   Teensy 4.0
 Pinout:
   -I2C SSD1306 128x64 Display
@@ -118,10 +118,10 @@ def add_bit(true_rand:bool):
             else:
                 working_rand_int = (working_rand_int << 1) | 1
             bit_counter += 1
-
+    #once you have a 5 bit number, throw away values larger than 29 and mod by 10 to get the final integer
     if bit_counter == 5:
         bit_counter = 0
-        if working_rand_int <= 30:
+        if working_rand_int <= 29:
             if len(pad_rand_array) < 10000:
                 pad_rand_array.append(working_rand_int % 10)
             #print(working_rand_int % 10)
@@ -142,7 +142,7 @@ def print_pad(length:int) -> str:
     pad_output += "\n-----IN PAD END----- "
     if print_checkerboard:
         pad_output +="\n\n--Conversion Table--\nCode-0  B-70  P-80  FIG-90\n   A-1  C-71  Q-81  (.)-91\n   E-2  D-72  R-82  (:)-92\n   I-3  F-73  S-83  (')-93\n   N-4  G-74  U-84  ( )-94\n   O-5  H-75  V-85  (+)-95\n   T-6  J-76  W-86  (-)-96\n        K-77  X-87  (=)-97\n        L-78  Y-88  (?)-98\n        M-79  Z-89  SPC-99 "
-    pad_output += "\n\n==========Fold and Tear==========\n\n----OUT PAD BEGIN----"
+    pad_output += "\n\n=========Fold and Tear=========\n\n----OUT PAD BEGIN----"
     pad_output += pad_body
     pad_output += "\n-----OUT PAD END----- "
     if print_checkerboard:
@@ -156,13 +156,13 @@ def draw_screen():
     global pad_rand_array
     global pad_size
     global use_true_random
-    
+
     menu_screen = "Buffer = " + str(len(pad_rand_array))
     if len(pad_rand_array) > pad_size:
         menu_screen += "\n\nReady to Print"
     else:
          menu_screen += "\n\nBuffer filling"
-    
+
     text_lower.text = menu_screen
 
 
