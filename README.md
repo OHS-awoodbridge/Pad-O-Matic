@@ -9,7 +9,7 @@ Adapted from the original Pad-O-Matic, modified to:
 
 
 ## Geiger Counter click into random numbers
-THe method used to create random number is to collect the monotonic time of three clicks (time.monotonic_ns()) if the distance between the first two clicks is greater, it's a 1 otherwise it's a 0. I used this method on my previous [Radiant Dice](https://hackaday.io/project/188240-radiant-dice) project which showed an even distribution over 800,000 clicks.
+The method used to create random number is to collect the monotonic time of three clicks (time.monotonic_ns()) if the distance between the first two clicks is greater, it's a 1 otherwise it's a 0. I used this method on my previous [Radiant Dice](https://hackaday.io/project/188240-radiant-dice) project which showed an even distribution over 800,000 clicks.
 
 I have included a datalogging version of the code which uses a Teensy 4.1 because of its SD Card. I have included the bits I've logged for reference/evaluation.
 
