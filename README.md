@@ -13,8 +13,8 @@ The method used to create random number is to collect the monotonic time of thre
 
 I have included a datalogging version of the code which uses a Teensy 4.1 because of its SD Card. I have included the integers I've logged for reference/evaluation.
 
-v1 included a bias to odd digits.
-v2 I incresed the delay after processing a bit and I'm seeing if that resolves it.
+- v1 included a bias to odd digits.
+- v2 I incresed the delay after processing a bit and I'm seeing if that resolves it.
 
 ## Worksheets for use in my classroom
 - Background/Directions Set: https://docs.google.com/document/d/1qtqCm59j31Vwh4kVkExBnryiyPrK6ayH71Pr0rYz72U/edit?usp=sharing
