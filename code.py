@@ -108,6 +108,7 @@ def add_bit(true_rand:bool):
     else:
         #store the time the click occured
         click_values[click_count] = time.monotonic()
+        time.sleep(.01) #wait for the click to clear
         click_count += 1
         if click_count == 3:
             click_count = 0
@@ -202,7 +203,7 @@ while True:
     if use_true_random:
         if geiger.value:
             add_bit(True)
-            time.sleep(.001)
+            
     else:
         add_bit(False)
 
