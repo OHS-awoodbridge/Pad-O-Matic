@@ -21,6 +21,7 @@ Pinout:
       TX -> D0 (RX1)
       RX -> D1 (TX1)
 
+
 """
 #program options
 use_true_random = True
@@ -82,51 +83,20 @@ HEIGHT = 64  # Change to 64 if needed
 display = adafruit_displayio_ssd1306.SSD1306(display_bus, width=WIDTH, height=HEIGHT)
 
 # Make the display context
-splash = displayio.Group()
-display.root_group = splash
+disp = displayio.Group()
+display.root_group = disp
 
 # Initialize the screen
 text_upper = label.Label(terminalio.FONT, text="Pad-O-Matic", color=0xFFFFFF, x=0, y=4)
-splash.append(text_upper)
+disp.append(text_upper)
 text_lower= label.Label(terminalio.FONT, text="", color=0xFFFFFF, x=0, y=25)
-splash.append(text_lower)
+disp.append(text_lower)
 
 
-def add_bit(true_rand:bool):
-    """adds random digits to pad_array using random bits"""
-    global working_rand_int
-    global bit_counter
-    global click_count
-    global click_values
-    #just generate a random bit and add push it into the working random number
-    if not true_rand:
-        bit = random.randint(0,1)
-        working_rand_int = (working_rand_int << 1) | bit
-        bit_counter += 1
+mode = "collect"
+#modes can be interact or collect
+button_count = 0
 
-    #collect three clicks, and push it into the working random number
-    else:
-        #store the time the click occured
-        click_values[click_count] = time.monotonic()
-        time.sleep(.01) #wait for the click to clear
-        click_count += 1
-        if click_count == 3:
-            click_count = 0
-            #if the time between the first two clicks was larger add a 0
-            if click_values[1] - click_values[0] > click_values[2] - click_values[1]:
-                working_rand_int = (working_rand_int << 1) | 0
-            #otherwise add a 1
-            else:
-                working_rand_int = (working_rand_int << 1) | 1
-            bit_counter += 1
-    #once you have a 5 bit number, throw away values larger than 29 and mod by 10 to get the final integer
-    if bit_counter == 5:
-        bit_counter = 0
-        if working_rand_int <= 29:
-            if len(pad_rand_array) < 10000:
-                pad_rand_array.append(working_rand_int % 10)
-            #print(working_rand_int % 10)
-        working_rand_int = 0
 
 def print_pad(length:int) -> str:
     """returns formatted random pad as a string"""
@@ -138,7 +108,7 @@ def print_pad(length:int) -> str:
             pad_body += " "
         pad_body += str(pad_rand_array.pop(0))
 
-    pad_output = "Length =" + str(length)+ "\n----IN PAD BEGIN----"
+    pad_output = "Length =" + str(length)+ "\n\n----IN PAD BEGIN----"
     pad_output += pad_body
     pad_output += "\n-----IN PAD END----- "
     if print_checkerboard:
@@ -157,12 +127,16 @@ def draw_screen():
     global pad_rand_array
     global pad_size
     global use_true_random
+    global mode
 
-    menu_screen = "Buffer = " + str(len(pad_rand_array))
-    if len(pad_rand_array) > pad_size:
-        menu_screen += "\n\nReady to Print"
+    if mode == "collect":
+        menu_screen = "Collecting Data \n\nPress Button"
     else:
-         menu_screen += "\n\nBuffer filling"
+        menu_screen = "Buffer = " + str(len(pad_rand_array))
+        if len(pad_rand_array) > pad_size:
+            menu_screen += "\n\nLong Press to Print"
+        else:
+            menu_screen += "\n\nBuffer filling"
 
     text_lower.text = menu_screen
 
@@ -171,39 +145,88 @@ def draw_screen():
 
 prev_time = time.monotonic()
 draw_screen()
+print("Ready")
+
+bit0 = 0
+bit1 = 0
+digitArray = [0,0,0,0,0,0,0,0,0,0]
+
+
 
 while True:
-    #refresh the screen every five seconds
-    now = time.monotonic()
-    if now > prev_time + 5:
-        prev_time = now
-        draw_screen()
-
-    #illumunates the button, once the buffer is bigger than the pad size.
-    if len(pad_rand_array) > pad_size:
-        print_light.value = True
-    else:
-        print_light.value = False
-
-    #debounce the button, and print the pad to the serial monitor and thermal printer
-    if not print_button.value and print_button_state is None:
-        print_button_state = "pressed"
-    if print_button.value and print_button_state == "pressed":
-        if len(pad_rand_array) > pad_size:
-            out = print_pad(250)
-            print(out)
-            printer.print(out)
-            printer.feed(3)
-        else:
-            print("Insufficient Buffer Size")
-        print_button_state = None
-        time.sleep(.4)
-
-    #add random values to the buffer
-    if use_true_random:
+    if mode == "collect":
         if geiger.value:
-            add_bit(True)
+            click_values[click_count] = time.monotonic()
+            click_count += 1
+            if click_count == 3:
+                click_count = 0
+                #if the time between the first two clicks was larger add a 0
+                if click_values[1] - click_values[0] > click_values[2] - click_values[1]:
+                    bit0 += 1
+                    working_rand_int = (working_rand_int << 1) | 0
+                    #print("0")
+                    #pass
+                #otherwise add a 1
+                else:
+                    bit1 += 1
+                    working_rand_int = (working_rand_int << 1) | 1
+                    #print("1")
+                    #pass
+                bit_counter += 1
+            if bit_counter == 5:
+                bit_counter = 0
+                if working_rand_int <= 29:
+                    if len(pad_rand_array) < 10000:
+                        pad_rand_array.append(working_rand_int % 10)
+                    # print(working_rand_int % 10)
+                    digitArray[working_rand_int % 10] += 1
+                    print(digitArray)
+                    print(len(pad_rand_array))
+                working_rand_int = 0
             
-    else:
-        add_bit(False)
+            
+            #message = f"Zeros= {bit0} Ones= {bit1} Differential= {bit1-bit0}"
+            #print(message)  
+            time.sleep(0.001)
+        #check light
+        if len(pad_rand_array) > pad_size:
+            print_light.value = True
+        else:
+            print_light.value = False
+        #check button
+        if not print_button.value:
+            mode = "interact"
+            #debounce button
+            while not print_button.value:
+                time.sleep(.2)
+            button_count = 0
+            print("interact")
+            draw_screen()
+    
+    
+    elif mode ==  "interact":
+        if not print_button.value:
+            button_count += 1
+            print(button_count)
+            time.sleep(.2)
+        else:   
+            if button_count > 2:
+                print("long")
+                button_count = 0
+                if len(pad_rand_array) > pad_size:
+                    out = print_pad(pad_size)
+                    print(out)
+                    printer.print(out)
+                    printer.feed(3)
+                    draw_screen()
+                else:
+                    print("Insufficient Buffer Size")
+                    draw_screen()
+                
+            elif  button_count > 0  and button_count <= 2 :
+                print("short")
+                button_count = 0
+                mode = "collect"
+                draw_screen()
 
+    
