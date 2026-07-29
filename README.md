@@ -6,12 +6,11 @@ Adapted from the original Pad-O-Matic, modified to:
 - use a Mighty Ohm geiger counter to generate randomness https://www.adafruit.com/product/483?srsltid=AfmBOoq4lWzNoEGYWhCjgTloVjrkflij2diQ_T4K3CcCHo9Z24fh1inW
 - use CircuitPython instead of Arduino C++ 
 
-
+## Operation
+In Collection Mode, the micro is fully focused on collecting data. If you push the button, it will switch to Interact Mode, in this mode, you can see the actual buffer size and long click to print, or short click to return to collect mode. The light on the button will light when the buffer is full enough to print.
 
 ## Geiger Counter click into random numbers
-The method used to create random number is to collect the monotonic time of three clicks (time.monotonic_ns()) if the distance between the first two clicks is greater, it's a 1 otherwise it's a 0. I used this method on my previous [Radiant Dice](https://hackaday.io/project/188240-radiant-dice) project which showed an even distribution over 800,000 clicks.
-
-I have included a datalogging version of the code which uses a Teensy 4.1 because of its SD Card. I have included the integers I've logged for reference/evaluation. I tried a couple different code examples, and I'm not changing the original code, since it seemed to have the least about of bias and used the least amout of bits per digit (5 bit integers). I tried using 8 bit integers as well as as using various mapping functions, and didn't find a better version.
+The method used to create random number is to collect the monotonic time of three clicks (time.monotonic_ns()) if the distance between the first two clicks is greater, it's a 1 otherwise it's a 0. I used this method on my previous [Radiant Dice](https://hackaday.io/project/188240-radiant-dice) project which showed an even distribution over 800,000 clicks. The current version has resolved the bias issues of previous versions.
 
 ## Worksheets for use in my classroom
 - Background/Directions Set: https://docs.google.com/document/d/1qtqCm59j31Vwh4kVkExBnryiyPrK6ayH71Pr0rYz72U/edit?usp=sharing
